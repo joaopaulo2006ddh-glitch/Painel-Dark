@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Painel Dark</title>
+<style>
+:root{--bg:#0b0d12;--panel:#141821;--panel2:#1b202b;--line:#2b3140;--text:#f3f4f8;--muted:#9da5b5;--accent:#a78bfa;--green:#4ade80;--red:#fb7185}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui,-apple-system,Segoe UI,sans-serif}
+header{padding:22px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px}
+.brand{font-weight:850;letter-spacing:2px;font-size:20px}.brand span{color:var(--accent)}.tag{font-size:11px;color:var(--accent);border:1px solid #594b83;padding:5px 9px;border-radius:30px}
+main{max-width:1000px;margin:auto;padding:22px 16px 50px}.sub{color:var(--muted);font-size:13px;margin:0 0 18px}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}.card,.section{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:17px}
+.card small{color:var(--muted)}.number{font-size:28px;font-weight:800;margin-top:5px}
+.section{margin-top:14px}.section h2{font-size:17px;margin:0 0 14px}
+form{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+label{display:block;color:var(--muted);font-size:12px;margin-bottom:6px}
+input,select{width:100%;padding:12px;border-radius:9px;border:1px solid var(--line);background:#0e1219;color:var(--text);font:inherit;min-width:0}
+.actions{display:flex;gap:9px;align-items:end;flex-wrap:wrap}.btn{border:0;border-radius:9px;padding:11px 15px;background:var(--accent);color:#171224;font-weight:750;cursor:pointer}.btn.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line)}.btn.danger{background:#4a202b;color:#ffdce2}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}.toolbar input{flex:1;min-width:180px}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:12px 9px;border-bottom:1px solid var(--line);font-size:13px}th{color:var(--muted);font-weight:600}.status{display:inline-block;padding:4px 8px;border-radius:20px;font-size:11px;background:#173725;color:var(--green)}.status.inactive{background:#39202a;color:#fda4af}.rowactions{display:flex;gap:6px}.rowactions button{padding:7px 9px;font-size:12px}
+.empty{text-align:center;color:var(--muted);padding:25px}
+.notice{border:1px solid #66502b;background:#241d12;color:#f5d99b;padding:12px;border-radius:10px;font-size:12px;line-height:1.5;margin-top:16px}
+footer{text-align:center;color:#687080;font-size:11px;padding:20px}
+@media(max-width:650px){.cards{grid-template-columns:1fr 1fr}form{grid-template-columns:1fr}.full{grid-column:auto}.tablewrap{overflow-x:auto}table{min-width:600px}.number{font-size:24px}}
+</style>
+</head>
+<body>
+<header><div class="brand">PANEL <span>DARK</span></div><div class="tag">ÁREA ADMINISTRATIVA • DEMO</div></header>
+<main>
+<p class="sub">Visão geral · Cadastro e gerenciamento de usuários</p>
+<div class="cards">
+ <div class="card"><small>Total de usuários</small><div class="number" id="total">0</div></div>
+ <div class="card"><small>Usuários ativos</small><div class="number" id="active">0</div></div>
+ <div class="card"><small>Inativos</small><div class="number" id="inactive">0</div></div>
+</div>
+<section class="section">
+<h2 id="formTitle">＋ Cadastrar usuário</h2>
+<form id="userForm">
+ <input type="hidden" id="editId">
+ <div><label for="name">Nome</label><input id="name" required maxlength="70" placeholder="Nome do usuário"></div>
+ <div><label for="email">E-mail</label><input id="email" type="email" required maxlength="120" placeholder="email@exemplo.com"></div>
+ <div><label for="status">Situação</label><select id="status"><option value="Ativo">Ativo</option><option value="Inativo">Inativo</option></select></div>
+ <div class="actions"><button class="btn" type="submit" id="saveBtn">Salvar usuário</button><button class="btn secondary" type="button" id="cancelBtn" hidden>Cancelar</button></div>
+</form>
+</section>
+<section class="section">
+<h2>♙ Lista de usuários</h2>
+<div class="toolbar"><input id="search" placeholder="Pesquisar por nome ou e-mail..."><button class="btn secondary" id="exportBtn" type="button">Exportar CSV</button></div>
+<div class="tablewrap"><table><thead><tr><th>Nome</th><th>E-mail</th><th>Situação</th><th>Ações</th></tr></thead><tbody id="users"></tbody></table></div>
+<div class="empty" id="empty">Nenhum usuário cadastrado.</div>
+</section>
+<div class="notice"><strong>Importante:</strong> esta é uma demonstração. Os registros ficam somente neste navegador (armazenamento local) e não são compartilhados entre dispositivos. Não use dados pessoais reais, senhas ou informações financeiras. Para uso real, será necessário adicionar autenticação segura e um banco de dados com controle de acesso.</div>
+</main>
+<footer>PAINEL DARK · PROTÓTIPO INICIAL</footer>
+<script>
+const KEY='painel-dark-demo-users-v1';
+let users=JSON.parse(localStorage.getItem(KEY)||'[]');
+const $=id=>document.getElementById(id);
+function persist(){localStorage.setItem(KEY,JSON.stringify(users));render()}
+function render(){
+ const a=users.filter(u=>u.status==='Ativo').length;
+ $('total').textContent=users.length;$('active').textContent=a;$('inactive').textContent=users.length-a;
+ const q=$('search').value.toLowerCase();
+ const filtered=users.filter(u=>(u.name+' '+u.email).toLowerCase().includes(q));
+ $('users').innerHTML='';
+ $('empty').style.display=filtered.length?'none':'block';
+ filtered.forEach(u=>{
+  const tr=document.createElement('tr');
+  const name=document.createElement('td');name.textContent=u.name;
+  const email=document.createElement('td');email.textContent=u.email;
+  const st=document.createElement('td');const badge=document.createElement('span');badge.className='status'+(u.status==='Ativo'?'':' inactive');badge.textContent=u.status;st.append(badge);
+  const actions=document.createElement('td');const wrap=document.createElement('div');wrap.className='rowactions';
+  const edit=document.createElement('button');edit.className='btn secondary';edit.textContent='Editar';edit.onclick=()=>startEdit(u.id);
+  const del=document.createElement('button');del.className='btn danger';del.textContent='Excluir';del.onclick=()=>removeUser(u.id);
+  wrap.append(edit,del);actions.append(wrap);tr.append(name,email,st,actions);$('users').append(tr);
+ });
+}
+$('userForm').addEventListener('submit',e=>{
+ e.preventDefault();const id=$('editId').value;
+ const name=$('name').value.trim(),email=$('email').value.trim();
+ if(!name||!email)return;
+ const duplicate=users.some(u=>u.email.toLowerCase()===email.toLowerCase()&&u.id!==id);
+ if(duplicate){alert('Este e-mail já está cadastrado.');return}
+ if(id){const u=users.find(x=>x.id===id);if(u)Object.assign(u,{name,email,status:$('status').value})}
+ else users.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),name,email,status:$('status').value});
+ resetForm();persist();
+});
+function startEdit(id){const u=users.find(x=>x.id===id);if(!u)return;$('editId').value=id;$('name').value=u.name;$('email').value=u.email;$('status').value=u.status;$('formTitle').textContent='✎ Editar usuário';$('saveBtn').textContent='Salvar alterações';$('cancelBtn').hidden=false;window.scrollTo({top:0,behavior:'smooth'})}
+function removeUser(id){if(confirm('Excluir este usuário da demonstração?')){users=users.filter(u=>u.id!==id);persist()}}
+function resetForm(){$('userForm').reset();$('editId').value='';$('formTitle').textContent='＋ Cadastrar usuário';$('saveBtn').textContent='Salvar usuário';$('cancelBtn').hidden=true}
+$('cancelBtn').onclick=resetForm;$('search').oninput=render;
+$('exportBtn').onclick=()=>{const rows=[['Nome','Email','Situação'],...users.map(u=>[u.name,u.email,u.status])];const csv=rows.map(r=>r.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(';')).join('\n');const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='usuarios-painel-dark.csv';a.click();URL.revokeObjectURL(a.href)};
+render();
+</script>
+</body>
+</html>
